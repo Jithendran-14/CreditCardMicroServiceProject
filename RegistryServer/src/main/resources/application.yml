@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: RegistryServer
+#Tomcat server port number
+server:
+  port: 7070
+#Eureka related configuration 
+eureka:
+  instance:
+    hostname: localhost
+  client:
+    fetch-registry: false
+    register-with-eureka: false
