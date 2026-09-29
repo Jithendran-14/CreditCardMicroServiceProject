@@ -5,6 +5,8 @@ import com.ofss.dto.CustomerResponse;
 import com.ofss.entity.CreditCard;
 import com.ofss.exception.ResourceNotFoundException;
 import com.ofss.repository.CreditCardRepository;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
+import jakarta.transaction.Transactional;
 
 import org.springframework.stereotype.Service;
 
@@ -263,7 +265,7 @@ public class CreditCardService {
     // =========================================================
     // PROCESS PURCHASE
     // =========================================================
-
+    @Transactional
     public CreditCard processPurchase(
             Long cardId,
             BigDecimal amount) {
@@ -332,7 +334,7 @@ public class CreditCardService {
     // =========================================================
     // PROCESS PAYMENT
     // =========================================================
-
+    @Transactional
     public CreditCard processPayment(
             Long cardId,
             BigDecimal amount) {

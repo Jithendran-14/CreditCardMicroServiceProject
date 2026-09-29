@@ -2,6 +2,7 @@ package com.ofss.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -40,4 +41,16 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.BAD_REQUEST)
                 .body(errors);
     }
+    @ExceptionHandler(ObjectOptimisticLockingFailureException.class)
+    public ResponseEntity<Map<String, String>> handleOptimisticLockingFailure(
+            ObjectOptimisticLockingFailureException exception) {
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(Map.of(
+                        "message",
+                        "Credit card was updated by another transaction. Please retry."
+                ));
+    }
 }
+

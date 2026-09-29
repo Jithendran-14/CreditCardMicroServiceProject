@@ -10,6 +10,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -63,6 +64,10 @@ public class CreditCard {
 
     @Column(name = "CARD_STATUS", nullable = false, length = 10)
     private String cardStatus;
+
+    @Version
+    @Column(name = "VERSION")
+    private Long version;
 
     public CreditCard() {
     }
@@ -138,20 +143,19 @@ public class CreditCard {
     public void setCardStatus(String cardStatus) {
         this.cardStatus = cardStatus;
     }
-
-    @Override
-    public String toString() {
-        return "CreditCard{" +
-                "cardId=" + cardId +
-                ", customerId=" + customerId +
-                ", cardNumber='" + cardNumber + '\'' +
-                ", cardType='" + cardType + '\'' +
-                ", creditLimit=" + creditLimit +
-                ", availableCredit=" + availableCredit +
-                ", outstandingAmount=" + outstandingAmount +
-                ", expiryDate=" + expiryDate +
-                ", cardStatus='" + cardStatus + '\'' +
-                '}';
+    public Long getVersion() {
+        return version;
     }
+
+    public void setVersion(Long version) {
+        this.version = version;
+    }
+    @Override
+	public String toString() {
+		return "CreditCard [cardId=" + cardId + ", customerId=" + customerId + ", cardNumber=" + cardNumber
+				+ ", cardType=" + cardType + ", creditLimit=" + creditLimit + ", availableCredit=" + availableCredit
+				+ ", outstandingAmount=" + outstandingAmount + ", expiryDate=" + expiryDate + ", cardStatus="
+				+ cardStatus + ", version=" + version + "]";
+	}
 }
 

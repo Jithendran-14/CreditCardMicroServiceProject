@@ -4,6 +4,7 @@ package com.ofss.client;
 import com.ofss.dto.CreditCardResponse;
 import com.ofss.dto.PaymentRequest;
 import com.ofss.dto.PurchaseRequest;
+import com.ofss.exception.ConcurrentTransactionException;
 
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
@@ -60,7 +61,6 @@ public class CreditCardClient {
 
         request.setAmount(amount);
 
-
         try {
 
             ResponseEntity<CreditCardResponse> response =
@@ -76,6 +76,13 @@ public class CreditCardClient {
 
         } catch (HttpStatusCodeException exception) {
 
+            if (exception.getStatusCode().value() == 409) {
+
+                throw new ConcurrentTransactionException(
+                        "Credit card was updated by another transaction. Please retry."
+                );
+            }
+
             String errorMessage =
                     exception.getResponseBodyAsString();
 
@@ -90,8 +97,6 @@ public class CreditCardClient {
             );
         }
     }
-
-
     // ---------------------------------------
     // Process Payment
     // ---------------------------------------
@@ -104,7 +109,6 @@ public class CreditCardClient {
                 new PaymentRequest();
 
         request.setAmount(amount);
-
 
         try {
 
@@ -120,6 +124,13 @@ public class CreditCardClient {
             return response.getBody();
 
         } catch (HttpStatusCodeException exception) {
+
+            if (exception.getStatusCode().value() == 409) {
+
+                throw new ConcurrentTransactionException(
+                        "Credit card was updated by another transaction. Please retry."
+                );
+            }
 
             String errorMessage =
                     exception.getResponseBodyAsString();

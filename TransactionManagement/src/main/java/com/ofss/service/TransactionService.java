@@ -7,6 +7,7 @@ import com.ofss.dto.PaymentRequest;
 import com.ofss.dto.PurchaseRequest;
 import com.ofss.dto.MerchantResponse;
 import com.ofss.entity.Transaction;
+import com.ofss.exception.ConcurrentTransactionException;
 import com.ofss.repository.TransactionRepository;
 import com.ofss.specification.TransactionSpecification;
 
@@ -96,6 +97,13 @@ public class TransactionService {
 
             return transactionRepository.save(transaction);
 
+        }  catch (ConcurrentTransactionException exception) {
+
+            return saveFailedPurchase(
+                    request,
+                    exception.getMessage()
+            );
+
         } catch (IllegalArgumentException exception) {
 
             return saveFailedPurchase(
@@ -136,6 +144,13 @@ public class TransactionService {
             transaction.setFailureReason(null);
 
             return transactionRepository.save(transaction);
+
+        } catch (ConcurrentTransactionException exception) {
+
+            return saveFailedPayment(
+                    request,
+                    exception.getMessage()
+            );
 
         } catch (IllegalArgumentException exception) {
 

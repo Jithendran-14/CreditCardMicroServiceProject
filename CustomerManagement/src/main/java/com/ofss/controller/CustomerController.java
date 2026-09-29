@@ -46,7 +46,7 @@ public class CustomerController {
 
     // 4. PUT /customers/id/{id} -> Update customer information
     @PutMapping("/id/{id}")
-    public ResponseEntity<?> updateCustomer(@Valid @PathVariable Long id, @RequestBody Customer updatedDetails) {
+    public ResponseEntity<?> updateCustomer( @PathVariable Long id, @Valid @RequestBody Customer updatedDetails) {
         Customer updatedCustomer = customerService.updateCustomer(id, updatedDetails);
         if (updatedCustomer != null) {
             return new ResponseEntity<>(updatedCustomer, HttpStatus.OK);
