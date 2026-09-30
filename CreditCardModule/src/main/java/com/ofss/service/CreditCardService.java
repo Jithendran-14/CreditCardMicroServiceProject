@@ -1,25 +1,27 @@
 package com.ofss.service;
 
-import com.ofss.client.CustomerClient;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
+import com.ofss.client.CustomerClient;
+import com.ofss.dto.CustomerOutstandingReport;
 import com.ofss.dto.CustomerResponse;
 import com.ofss.entity.CreditCard;
 import com.ofss.exception.ResourceNotFoundException;
 import com.ofss.repository.CreditCardRepository;
-import org.springframework.orm.ObjectOptimisticLockingFailureException;
+
 import jakarta.transaction.Transactional;
 
-import org.springframework.stereotype.Service;
-
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.List;
-import com.ofss.dto.CustomerOutstandingReport;
 @Service
 public class CreditCardService {
-	private static final Logger logger =
-	        LoggerFactory.getLogger(CreditCardService.class);
+
+    private static final Logger logger =
+            LoggerFactory.getLogger(CreditCardService.class);
 
     private final CreditCardRepository creditCardRepository;
     private final CustomerClient customerClient;
@@ -32,99 +34,56 @@ public class CreditCardService {
         this.customerClient = customerClient;
     }
 
-
-    // =========================================================
-    // ISSUE CARD
-    // =========================================================
-
     public CreditCard issueCard(CreditCard card) {
 
-        // Validate customer
         if (card.getCustomerId() == null) {
-            throw new IllegalArgumentException(
-                    "Customer ID is required"
-            );
+            throw new IllegalArgumentException("Customer ID is required");
         }
 
         CustomerResponse customer =
-                customerClient.getCustomerById(
-                        card.getCustomerId()
-                );
+                customerClient.getCustomerById(card.getCustomerId());
 
         if (customer == null) {
             throw new ResourceNotFoundException(
-                    "Customer not found with id: "
-                            + card.getCustomerId()
+                    "Customer not found with id: " + card.getCustomerId()
             );
         }
 
-
-        // Validate card number
         if (card.getCardNumber() == null ||
                 card.getCardNumber().isBlank()) {
-
-            throw new IllegalArgumentException(
-                    "Card number is required"
-            );
+            throw new IllegalArgumentException("Card number is required");
         }
 
-
-        if (creditCardRepository.existsByCardNumber(
-                card.getCardNumber())) {
-
-            throw new IllegalArgumentException(
-                    "Card number already exists"
-            );
+        if (creditCardRepository.existsByCardNumber(card.getCardNumber())) {
+            throw new IllegalArgumentException("Card number already exists");
         }
 
-
-        // Validate card type
-        String cardType =
-                normalizeCardType(card.getCardType());
+        String cardType = normalizeCardType(card.getCardType());
 
         if (!isValidCardType(cardType)) {
-
             throw new IllegalArgumentException(
                     "Card type must be SILVER, GOLD or PLATINUM"
             );
         }
 
-
-        // Validate credit limit
         if (card.getCreditLimit() == null ||
-                card.getCreditLimit()
-                        .compareTo(BigDecimal.ZERO) <= 0) {
-
+                card.getCreditLimit().compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException(
                     "Credit limit must be greater than zero"
             );
         }
 
-
-        // Validate expiry date
         if (card.getExpiryDate() == null ||
-                card.getExpiryDate()
-                        .isBefore(LocalDate.now())) {
-
+                card.getExpiryDate().isBefore(LocalDate.now())) {
             throw new IllegalArgumentException(
                     "Expiry date must be in the future"
             );
         }
 
-
-        // Set initial values
         card.setCardType(cardType);
-
-        card.setAvailableCredit(
-                card.getCreditLimit()
-        );
-
-        card.setOutstandingAmount(
-                BigDecimal.ZERO
-        );
-
+        card.setAvailableCredit(card.getCreditLimit());
+        card.setOutstandingAmount(BigDecimal.ZERO);
         card.setCardStatus("ACTIVE");
-
 
         CreditCard savedCard = creditCardRepository.save(card);
 
@@ -138,74 +97,30 @@ public class CreditCardService {
         return savedCard;
     }
 
-
-    // =========================================================
-    // GET ALL CARDS
-    // =========================================================
-
     public List<CreditCard> getAllCards() {
-
         return creditCardRepository.findAll();
     }
 
-
-    // =========================================================
-    // GET CARD BY ID
-    // =========================================================
-
     public CreditCard getCardById(Long cardId) {
-
-        return creditCardRepository
-                .findById(cardId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Credit card not found with id: "
-                                        + cardId
-                        )
-                );
+        return creditCardRepository.findById(cardId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Credit card not found with id: " + cardId
+                ));
     }
 
-
-    // =========================================================
-    // GET CARDS BY CUSTOMER
-    // =========================================================
-
-    public List<CreditCard> getCardsByCustomerId(
-            Long customerId) {
-
-        return creditCardRepository
-                .findByCustomerId(customerId);
+    public List<CreditCard> getCardsByCustomerId(Long customerId) {
+        return creditCardRepository.findByCustomerId(customerId);
     }
 
+    public CreditCard updateCard(Long cardId, CreditCard updatedCard) {
 
-    // =========================================================
-    // UPDATE CARD
-    // =========================================================
-
-    public CreditCard updateCard(
-            Long cardId,
-            CreditCard updatedCard) {
-
-        CreditCard existingCard =
-                creditCardRepository
-                        .findById(cardId)
-                        .orElseThrow(() ->
-                                new ResourceNotFoundException(
-                                        "Credit card not found with id: "
-                                                + cardId
-                                )
-                        );
-
+        CreditCard existingCard = getCardById(cardId);
 
         if (updatedCard.getCardType() != null) {
 
-            String cardType =
-                    normalizeCardType(
-                            updatedCard.getCardType()
-                    );
+            String cardType = normalizeCardType(updatedCard.getCardType());
 
             if (!isValidCardType(cardType)) {
-
                 throw new IllegalArgumentException(
                         "Card type must be SILVER, GOLD or PLATINUM"
                 );
@@ -214,239 +129,100 @@ public class CreditCardService {
             existingCard.setCardType(cardType);
         }
 
-
         if (updatedCard.getExpiryDate() != null) {
 
-            if (updatedCard.getExpiryDate()
-                    .isBefore(LocalDate.now())) {
-
+            if (updatedCard.getExpiryDate().isBefore(LocalDate.now())) {
                 throw new IllegalArgumentException(
                         "Expiry date must be in the future"
                 );
             }
 
-            existingCard.setExpiryDate(
-                    updatedCard.getExpiryDate()
-            );
+            existingCard.setExpiryDate(updatedCard.getExpiryDate());
         }
-
 
         return creditCardRepository.save(existingCard);
     }
-
-
-    // =========================================================
-    // UPDATE CARD STATUS
-    // =========================================================
 
     public CreditCard updateCardStatus(
             Long cardId,
             CreditCard updatedCard) {
 
-        CreditCard existingCard =
-                creditCardRepository
-                        .findById(cardId)
-                        .orElseThrow(() ->
-                                new ResourceNotFoundException(
-                                        "Credit card not found with id: "
-                                                + cardId
-                                )
-                        );
+        CreditCard existingCard = getCardById(cardId);
 
+        String status = normalizeStatus(updatedCard.getCardStatus());
 
-        String status =
-                normalizeStatus(
-                        updatedCard.getCardStatus()
-                );
-
-
-        if (!"ACTIVE".equals(status) &&
-                !"BLOCKED".equals(status)) {
-
+        if (!"ACTIVE".equals(status) && !"BLOCKED".equals(status)) {
             throw new IllegalArgumentException(
                     "Card status must be ACTIVE or BLOCKED"
             );
         }
-
 
         existingCard.setCardStatus(status);
 
         return creditCardRepository.save(existingCard);
     }
 
-
-    // =========================================================
-    // PROCESS PURCHASE
-    // =========================================================
     @Transactional
-    public CreditCard processPurchase(
-            Long cardId,
-            BigDecimal amount) {
+    public CreditCard processPurchase(Long cardId, BigDecimal amount) {
 
-        // 1. Validate amount
-        if (amount == null ||
-                amount.compareTo(BigDecimal.ZERO) <= 0) {
-
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException(
                     "Purchase amount must be greater than zero"
             );
         }
 
+        CreditCard card = getCardById(cardId);
 
-        // 2. Find card
-        CreditCard card =
-                creditCardRepository
-                        .findById(cardId)
-                        .orElseThrow(() ->
-                                new ResourceNotFoundException(
-                                        "Credit card not found with id: "
-                                                + cardId
-                                )
-                        );
-
-
-        // 3. Check card status
-        if (!"ACTIVE".equalsIgnoreCase(
-                card.getCardStatus())) {
-
+        if (!"ACTIVE".equalsIgnoreCase(card.getCardStatus())) {
             throw new IllegalArgumentException(
                     "Purchase cannot be made. Card is not active"
             );
         }
 
-
-        // 4. Check available credit
-        if (card.getAvailableCredit()
-                .compareTo(amount) < 0) {
-
-            throw new IllegalArgumentException(
-                    "Insufficient available credit"
-            );
+        if (card.getAvailableCredit().compareTo(amount) < 0) {
+            throw new IllegalArgumentException("Insufficient available credit");
         }
 
+        card.setAvailableCredit(card.getAvailableCredit().subtract(amount));
+        card.setOutstandingAmount(card.getOutstandingAmount().add(amount));
 
-        // 5. Deduct available credit
-        card.setAvailableCredit(
-                card.getAvailableCredit()
-                        .subtract(amount)
-        );
-
-
-        // 6. Increase outstanding
-        card.setOutstandingAmount(
-                card.getOutstandingAmount()
-                        .add(amount)
-        );
-
-
-        // 7. Save
         return creditCardRepository.save(card);
     }
 
-
-    // =========================================================
-    // PROCESS PAYMENT
-    // =========================================================
     @Transactional
-    public CreditCard processPayment(
-            Long cardId,
-            BigDecimal amount) {
+    public CreditCard processPayment(Long cardId, BigDecimal amount) {
 
-        // 1. Validate amount
-        if (amount == null ||
-                amount.compareTo(BigDecimal.ZERO) <= 0) {
-
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException(
                     "Payment amount must be greater than zero"
             );
         }
 
+        CreditCard card = getCardById(cardId);
 
-        // 2. Find card
-        CreditCard card =
-                creditCardRepository
-                        .findById(cardId)
-                        .orElseThrow(() ->
-                                new ResourceNotFoundException(
-                                        "Credit card not found with id: "
-                                                + cardId
-                                )
-                        );
-
-
-        // 3. Check card status
-        if (!"ACTIVE".equalsIgnoreCase(
-                card.getCardStatus())) {
-
+        if (!"ACTIVE".equalsIgnoreCase(card.getCardStatus())) {
             throw new IllegalArgumentException(
                     "Payment cannot be made. Card is not active"
             );
         }
 
-
-        // 4. Check outstanding amount
-        if (amount.compareTo(
-                card.getOutstandingAmount()) > 0) {
-
+        if (amount.compareTo(card.getOutstandingAmount()) > 0) {
             throw new IllegalArgumentException(
                     "Payment amount cannot exceed outstanding amount"
             );
         }
 
-
-        // 5. Reduce outstanding
         card.setOutstandingAmount(
-                card.getOutstandingAmount()
-                        .subtract(amount)
+                card.getOutstandingAmount().subtract(amount)
         );
 
-
-        // 6. Increase available credit
         card.setAvailableCredit(
-                card.getAvailableCredit()
-                        .add(amount)
+                card.getAvailableCredit().add(amount)
         );
 
-
-        // 7. Save
         return creditCardRepository.save(card);
     }
 
-
-    // =========================================================
-    // HELPER METHODS
-    // =========================================================
-
-    private boolean isValidCardType(
-            String cardType) {
-
-        return "SILVER".equals(cardType)
-                || "GOLD".equals(cardType)
-                || "PLATINUM".equals(cardType);
-    }
-
-
-    private String normalizeCardType(
-            String cardType) {
-
-        if (cardType == null) {
-            return "";
-        }
-
-        return cardType.trim().toUpperCase();
-    }
-
-
-    private String normalizeStatus(
-            String cardStatus) {
-
-        if (cardStatus == null) {
-            return "";
-        }
-
-        return cardStatus.trim().toUpperCase();
-    }
-    
     public BigDecimal getTotalOutstandingAmount() {
         return creditCardRepository.getTotalOutstandingAmount();
     }
@@ -456,69 +232,124 @@ public class CreditCardService {
         List<CreditCard> cards =
                 creditCardRepository.findCardsOrderByOutstandingAsc();
 
-        if (cards.isEmpty()) {
-            return null;
-        }
-
-        return cards.get(0);
+        return cards.isEmpty() ? null : cards.get(0);
     }
+
     public CreditCard getHighestOutstandingCard() {
 
         List<CreditCard> cards =
                 creditCardRepository.findCardsOrderByOutstandingDesc();
 
-        if (cards.isEmpty()) {
-            return null;
-        }
-
-        return cards.get(0);
+        return cards.isEmpty() ? null : cards.get(0);
     }
+
     public List<CreditCard> getLowAvailableCreditCards() {
-
-        return creditCardRepository
-                .findCardsWithLowAvailableCredit();
+        return creditCardRepository.findCardsWithLowAvailableCredit();
     }
-    public List<CreditCard> getBlockedCards() {
 
+    public List<CreditCard> getBlockedCards() {
         return creditCardRepository.findBlockedCards();
     }
- // =========================================================
- // CUSTOMER WITH HIGHEST OUTSTANDING
- // =========================================================
- public CustomerOutstandingReport getCustomerWithHighestOutstanding() {
 
-     return creditCardRepository
-             .findCustomersByOutstandingDescending()
-             .stream()
-             .findFirst()
-             .orElseThrow(() ->
-                     new ResourceNotFoundException(
-                             "No credit-card outstanding records found"
-                     )
-             );
- }
+    public List<CustomerOutstandingReport>
+            getCustomersWithHighestOutstanding() {
 
+        List<CustomerOutstandingReport> reports =
+                creditCardRepository
+                        .findCustomersByOutstandingDescending();
 
- // =========================================================
- // CUSTOMER WITH LOWEST OUTSTANDING
- // =========================================================
- public CustomerOutstandingReport getCustomerWithLowestOutstanding() {
+        if (reports.isEmpty()) {
+            throw new ResourceNotFoundException(
+                    "No credit-card outstanding records found"
+            );
+        }
 
-     return creditCardRepository
-             .findCustomersByOutstandingAscending()
-             .stream()
-             .findFirst()
-             .orElseThrow(() ->
-                     new ResourceNotFoundException(
-                             "No credit-card outstanding records found"
-                     )
-             );
- }
+        BigDecimal highestOutstanding =
+                reports.get(0).getTotalOutstandingAmount();
+
+        return reports.stream()
+                .filter(report ->
+                        report.getTotalOutstandingAmount()
+                                .compareTo(highestOutstanding) == 0
+                )
+                .toList();
+    }
+
+    public List<CustomerOutstandingReport>
+            getCustomersWithLowestOutstanding() {
+
+        List<CustomerOutstandingReport> reports =
+                creditCardRepository
+                        .findCustomersByOutstandingAscending();
+
+        if (reports.isEmpty()) {
+            throw new ResourceNotFoundException(
+                    "No credit-card outstanding records found"
+            );
+        }
+
+        BigDecimal lowestOutstanding =
+                reports.get(0).getTotalOutstandingAmount();
+
+        return reports.stream()
+                .filter(report ->
+                        report.getTotalOutstandingAmount()
+                                .compareTo(lowestOutstanding) == 0
+                )
+                .toList();
+    }
+
+    private boolean isValidCardType(String cardType) {
+        return "SILVER".equals(cardType)
+                || "GOLD".equals(cardType)
+                || "PLATINUM".equals(cardType);
+    }
+
+    private String normalizeCardType(String cardType) {
+        return cardType == null ? "" : cardType.trim().toUpperCase();
+    }
+
+    private String normalizeStatus(String cardStatus) {
+        return cardStatus == null ? "" : cardStatus.trim().toUpperCase();
+    }
+    
+    public List<CreditCard> getCardsWithHighestAvailableCredit() {
+
+        List<CreditCard> cards =
+                creditCardRepository.findCardsOrderByAvailableCreditDesc();
+
+        if (cards.isEmpty()) {
+            throw new ResourceNotFoundException("No credit cards found");
+        }
+
+        BigDecimal highestAvailableCredit =
+                cards.get(0).getAvailableCredit();
+
+        return cards.stream()
+                .filter(card ->
+                        card.getAvailableCredit()
+                                .compareTo(highestAvailableCredit) == 0
+                )
+                .toList();
+    }
+
+    public List<CreditCard> getCardsWithLowestAvailableCredit() {
+
+        List<CreditCard> cards =
+                creditCardRepository.findCardsOrderByAvailableCreditAsc();
+
+        if (cards.isEmpty()) {
+            throw new ResourceNotFoundException("No credit cards found");
+        }
+
+        BigDecimal lowestAvailableCredit =
+                cards.get(0).getAvailableCredit();
+
+        return cards.stream()
+                .filter(card ->
+                        card.getAvailableCredit()
+                                .compareTo(lowestAvailableCredit) == 0
+                )
+                .toList();
+    }
 }
-
-
-
-
-
-
-

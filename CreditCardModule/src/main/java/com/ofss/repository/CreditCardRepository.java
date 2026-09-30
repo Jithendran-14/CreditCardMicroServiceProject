@@ -69,7 +69,19 @@ List<CreditCard> findCardsOrderByOutstandingAsc();
 	       """)
 	List<CreditCard> findBlockedCards();
 
+	@Query("""
+		       SELECT c
+		       FROM CreditCard c
+		       ORDER BY c.availableCredit DESC
+		       """)
+		List<CreditCard> findCardsOrderByAvailableCreditDesc();
 
+		@Query("""
+		       SELECT c
+		       FROM CreditCard c
+		       ORDER BY c.availableCredit ASC
+		       """)
+		List<CreditCard> findCardsOrderByAvailableCreditAsc();
 
 
 }
