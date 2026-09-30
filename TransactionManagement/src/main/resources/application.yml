@@ -1,0 +1,31 @@
+spring:
+  application:
+    name: transaction-management
+  datasource:
+    url: jdbc:oracle:thin:@//localhost:1521/freepdb1
+    username: system
+    password: ayushman
+    driver-class-name: oracle.jdbc.OracleDriver
+server:
+  port: 7074
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:7070/eureka
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+        - "*"
+  info:
+    env:
+      enabled: true
+info:
+  app: 
+      name: Transaction MS
+      description: Transaction microservice
+      version: 1.0.0
+      author: jithendra
+      location: bangalore
+      projectno: batch14

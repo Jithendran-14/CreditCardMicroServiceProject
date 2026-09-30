@@ -1,0 +1,28 @@
+spring:
+  application:
+    name: credit-card-management
+
+  datasource:
+    url: jdbc:oracle:thin:@//localhost:1521/freePDB1
+    username: system
+    password: ayushman
+    driver-class-name: oracle.jdbc.OracleDriver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+
+server:
+  port: 7072
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:7070/eureka
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"

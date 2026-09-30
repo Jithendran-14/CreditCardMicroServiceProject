@@ -1,0 +1,19 @@
+﻿# STS / Eclipse
+.metadata/
+.settings/
+.project
+.classpath
+
+# Java / Maven / Gradle builds
+**/target/
+**/build/
+*.class
+
+# Logs and OS files
+*.log
+.DS_Store
+Thumbs.db
+
+# Secrets / local configuration
+**/application-local.properties
+**/application-secret.properties
